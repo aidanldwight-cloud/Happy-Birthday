@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Birthday Fact Quest</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #102033;
+        --muted: #5b6f8a;
+        --paper: #eef7ff;
+        --panel: #ffffff;
+        --line: rgba(40, 103, 178, 0.18);
+        --sun: #7cc8ff;
+        --coral: #ff6b6b;
+        --teal: #18b7d7;
+        --blue: #1479ff;
+        --plum: #4f7cff;
+        --shadow: 0 24px 60px rgba(20, 88, 170, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 20% 10%, rgba(124, 200, 255, 0.48), transparent 26rem),
+          radial-gradient(circle at 88% 18%, rgba(20, 121, 255, 0.24), transparent 22rem),
+          linear-gradient(135deg, #e9f5ff 0%, #f5fbff 48%, #eaf2ff 100%);
+        color: var(--ink);
+        overflow-x: hidden;
+      }
+
+      canvas {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 36px;
+      }
+
+      body.locked main {
+        display: none;
+      }
+
+      .lock-screen {
+        position: relative;
+        z-index: 2;
+        min-height: 100vh;
+        display: none;
+        place-items: center;
+        padding: 24px;
+      }
+
+      body.locked .lock-screen {
+        display: grid;
+      }
+
+      .lock-panel {
+        width: min(620px, 100%);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: var(--shadow);
+        padding: clamp(28px, 6vw, 54px);
+        text-align: center;
+        backdrop-filter: blur(18px);
+      }
+
+      .lock-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #e4f2ff;
+        color: #0f4fa8;
+        font-size: 36px;
+        font-weight: 900;
+      }
+
+      .lock-panel h1 {
+        font-size: clamp(36px, 7vw, 68px);
+      }
+
+      .lock-panel p {
+        margin: 18px auto 0;
+        max-width: 460px;
+        color: #3d5f86;
+        font-size: clamp(18px, 2.5vw, 22px);
+        line-height: 1.5;
+      }
+
+      .unlock-date {
+        display: inline-flex;
+        margin-top: 22px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: #0f4fa8;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .shell {
+        display: grid;
+        min-height: calc(100vh - 64px);
+        grid-template-columns: minmax(0, 0.95fr) minmax(340px, 1.05fr);
+        gap: 28px;
+        align-items: center;
+      }
+
+      .intro {
+        padding: 22px 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.76);
+        color: #24507f;
+        font-size: 14px;
+        font-weight: 700;
+        backdrop-filter: blur(16px);
+      }
+
+      .spark {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--sun);
+        box-shadow: 0 0 0 5px rgba(124, 200, 255, 0.28);
+      }
+
+      h1 {
+        max-width: 780px;
+        margin: 0;
+        font-size: clamp(46px, 7vw, 84px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 590px;
+        margin: 22px 0 0;
+        color: #3d5f86;
+        font-size: clamp(18px, 2vw, 22px);
+        line-height: 1.5;
+      }
+
+      .gift-art {
+        width: min(420px, 100%);
+        margin-top: 28px;
+        aspect-ratio: 1.45;
+        border-radius: 8px;
+        background:
+          linear-gradient(90deg, transparent 46%, rgba(255, 255, 255, 0.85) 46% 54%, transparent 54%),
+          linear-gradient(0deg, transparent 44%, rgba(255, 255, 255, 0.85) 44% 56%, transparent 56%),
+          linear-gradient(135deg, #0d5bd7 0 24%, #2ea8ff 24% 48%, #6fd3ff 48% 72%, #a9ddff 72% 100%);
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .gift-art::before,
+      .gift-art::after {
+        content: "";
+        position: absolute;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .gift-art::before {
+        width: 120px;
+        height: 120px;
+        left: 38px;
+        top: 28px;
+      }
+
+      .gift-art::after {
+        width: 160px;
+        height: 160px;
+        right: -36px;
+        bottom: -48px;
+      }
+
+      .fact-machine {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+        overflow: hidden;
+      }
+
+      .machine-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .nameplate {
+        display: grid;
+        gap: 3px;
+      }
+
+      .nameplate span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .nameplate strong {
+        font-size: 22px;
+      }
+
+      .counter {
+        min-width: 96px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #0f4fa8;
+        color: #fff;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        font-weight: 800;
+      }
+
+      .fact-card {
+        display: grid;
+        gap: 16px;
+        min-height: 340px;
+        padding: clamp(22px, 4vw, 36px);
+      }
+
+      .category {
+        width: fit-content;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(20, 121, 255, 0.12);
+        color: #1158bf;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .fact {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.08;
+        font-weight: 850;
+      }
+
+      .why {
+        margin: 0;
+        color: #3d5f86;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      button,
+      a.button {
+        min-height: 46px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 16px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+      }
+
+      button:hover,
+      a.button:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        background: var(--blue);
+        color: white;
+        box-shadow: 0 12px 24px rgba(20, 121, 255, 0.26);
+      }
+
+      .secondary {
+        background: #e4f2ff;
+        color: #1158bf;
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        padding: 18px;
+        border-top: 1px solid var(--line);
+        background: rgba(228, 242, 255, 0.62);
+      }
+
+      .chip {
+        background: #fff;
+        color: #24507f;
+        border: 1px solid var(--line);
+        box-shadow: none;
+      }
+
+      .chip.active {
+        border-color: transparent;
+        background: #0f4fa8;
+        color: #fff;
+      }
+
+      .note {
+        margin-top: 18px;
+        color: #667085;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 850px) {
+        main {
+          width: min(100% - 22px, 640px);
+          padding-top: 16px;
+        }
+
+        .shell {
+          min-height: auto;
+          grid-template-columns: 1fr;
+          gap: 16px;
+          align-items: stretch;
+        }
+
+        .intro {
+          padding-top: 10px;
+        }
+
+        .gift-art {
+          max-width: 330px;
+        }
+
+        .machine-top,
+        .filters {
+          padding: 14px;
+        }
+
+        .filters {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 460px) {
+        h1 {
+          font-size: 42px;
+        }
+
+        .lead {
+          font-size: 17px;
+        }
+
+        .fact {
+          font-size: 27px;
+        }
+
+        .machine-top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .counter {
+          width: 100%;
+        }
+
+        .filters {
+          grid-template-columns: 1fr;
+        }
+
+        button,
+        a.button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="locked">
+    <canvas id="confetti" aria-hidden="true"></canvas>
+    <section class="lock-screen" aria-label="Birthday website locked">
+      <div class="lock-panel">
+        <div class="lock-icon" aria-hidden="true">14</div>
+        <h1>Not yet.</h1>
+        <p>This birthday present is locked for now. Come back when it opens.</p>
+        <div class="unlock-date">Unlocks July 16, 2026</div>
+      </div>
+    </section>
+    <main>
+      <section class="shell" aria-label="Birthday fact website">
+        <div class="intro">
+          <div class="badge"><span class="spark"></span> Birthday present unlocked</div>
+          <h1>Happy birthday, Birthday Legend.</h1>
+          <p class="lead">
+            A tiny fact machine filled with things you already like, plus a few deeper
+            trails for whenever curiosity wins.
+          </p>
+          <div class="gift-art" aria-hidden="true"></div>
+        </div>
+
+        <article class="fact-machine">
+          <div class="machine-top">
+            <div class="nameplate">
+              <span>Fact queue</span>
+              <strong id="topicName">Everything</strong>
+            </div>
+            <div class="counter" id="counter">01 / 11000</div>
+          </div>
+
+          <div class="fact-card">
+            <div class="category" id="category">Space</div>
+            <p class="fact" id="factText"></p>
+            <p class="why" id="whyText"></p>
+            <div class="actions">
+              <button class="primary" id="randomButton" type="button">Another fact</button>
+              <a class="button secondary" id="deepLink" href="#" target="_blank" rel="noreferrer">Dive deeper</a>
+            </div>
+          </div>
+
+          <div class="filters" id="filters" aria-label="Fact categories"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const friendName = "Birthday Legend";
+      const unlockDate = new Date("2026-07-16T00:00:00");
+      const isUnlocked = new Date() >= unlockDate;
+
+      document.body.classList.toggle("locked", !isUnlocked);
+
+      const starterFacts = [
+        {
+          category: "Space",
+          fact: "A day on Venus lasts longer than a Venus year.",
+          why: "Venus rotates so slowly that one spin takes about 243 Earth days, while one orbit around the Sun takes about 225.",
+          link: "https://science.nasa.gov/venus/"
+        },
+        {
+          category: "Space",
+          fact: "Saturn is not the only planet with rings.",
+          why: "Jupiter, Uranus, and Neptune have ring systems too, but Saturn's are bright enough to steal the show.",
+          link: "https://science.nasa.gov/solar-system/planets/"
+        },
+        {
+          category: "Space",
+          fact: "The largest known volcano in the solar system is on Mars.",
+          why: "Olympus Mons is so huge that its summit rises roughly three times higher than Mount Everest.",
+          link: "https://science.nasa.gov/mars/"
+        },
+        {
+          category: "Space",
+          fact: "Neutron stars can spin hundreds of times per second.",
+          why: "When a massive star collapses, it can pack more mass than the Sun into a city-sized object and rotate wildly fast.",
+          link: "https://science.nasa.gov/universe/stars/neutron-stars/"
+        },
+        {
+          category: "Space",
+          fact: "The Moon is slowly drifting away from Earth.",
+          why: "Tidal forces push the Moon outward by a few centimeters each year, which is tiny but measurable.",
+          link: "https://science.nasa.gov/moon/"
+        },
+        {
+          category: "Space",
+          fact: "Some planets orbit two stars.",
+          why: "These circumbinary planets get two suns in their sky, which sounds fictional but is real astronomy.",
+          link: "https://science.nasa.gov/exoplanets/"
+        },
+        {
+          category: "Gaming",
+          fact: "The first commercial arcade hit made its own kind of music.",
+          why: "Pong's simple bleeps came from the hardware itself, turning a few electronic tones into instant feedback.",
+          link: "https://www.britannica.com/topic/Pong"
+        },
+        {
+          category: "Gaming",
+          fact: "Speedrunners often use exact frame timing.",
+          why: "Some runs depend on inputs measured in fractions of a second, which makes a clean record feel like science and performance at once.",
+          link: "https://www.speedrun.com/"
+        },
+        {
+          category: "Gaming",
+          fact: "Procedural generation can make a world feel endless.",
+          why: "Games can use rules and random seeds to build maps, items, or levels instead of hand-making every detail.",
+          link: "https://en.wikipedia.org/wiki/Procedural_generation"
+        },
+        {
+          category: "Gaming",
+          fact: "Hitboxes are invisible shapes that decide what counts as a hit.",
+          why: "Great games often use simplified hitboxes so action feels fair, fast, and readable.",
+          link: "https://en.wikipedia.org/wiki/Collision_detection"
+        },
+        {
+          category: "Gaming",
+          fact: "Lag can change what a player thinks happened.",
+          why: "Online games use prediction and rollback tricks to keep action smooth even when networks are imperfect.",
+          link: "https://en.wikipedia.org/wiki/Lag_(video_games)"
+        },
+        {
+          category: "Gaming",
+          fact: "NPC pathfinding often uses graph math.",
+          why: "A game character can navigate a map by treating places as nodes and choosing a smart route between them.",
+          link: "https://en.wikipedia.org/wiki/Pathfinding"
+        },
+        {
+          category: "Music",
+          fact: "A catchy chorus often works because of repetition with tiny changes.",
+          why: "Your brain gets the satisfaction of recognizing a pattern while still receiving just enough surprise to stay locked in.",
+          link: "https://www.britannica.com/art/music"
+        },
+        {
+          category: "Music",
+          fact: "Vinyl records store sound as physical grooves.",
+          why: "The needle follows microscopic wiggles in the record, translating motion back into sound.",
+          link: "https://www.loc.gov/collections/national-jukebox/articles-and-essays/acoustical-recording/"
+        },
+        {
+          category: "Music",
+          fact: "A sample can turn old sound into a brand-new hook.",
+          why: "Producers can reshape a tiny piece of audio with pitch, tempo, slicing, and effects until it becomes something fresh.",
+          link: "https://en.wikipedia.org/wiki/Sampling_(music)"
+        },
+        {
+          category: "Music",
+          fact: "Bass notes can make a song feel physically bigger.",
+          why: "Low frequencies move more air, so big speakers and headphones can turn rhythm into something you feel.",
+          link: "https://www.britannica.com/science/sound-physics"
+        },
+        {
+          category: "Music",
+          fact: "Auto-Tune was inspired by seismic data work.",
+          why: "The math behind detecting pitch has roots in signal processing, a field used far beyond music.",
+          link: "https://en.wikipedia.org/wiki/Auto-Tune"
+        },
+        {
+          category: "Music",
+          fact: "A bridge can make the final chorus hit harder.",
+          why: "By stepping away from the main pattern, a bridge makes the return feel more satisfying.",
+          link: "https://www.britannica.com/art/musical-form"
+        },
+        {
+          category: "Sports",
+          fact: "A basketball's backspin helps it land softer.",
+          why: "Backspin changes how the ball bounces off the rim, which is why a smooth shot can look so gentle.",
+          link: "https://www.nba.com/"
+        },
+        {
+          category: "Sports",
+          fact: "Soccer players can bend a shot with pressure differences.",
+          why: "Spin changes airflow around the ball, causing it to curve through the air.",
+          link: "https://www.britannica.com/science/Magnus-effect"
+        },
+        {
+          category: "Sports",
+          fact: "A baseball can look like it drops because of spin and speed.",
+          why: "Pitch movement is physics wearing a jersey: grip, release angle, spin rate, and airflow all team up.",
+          link: "https://www.mlb.com/glossary/statcast/spin-rate"
+        },
+        {
+          category: "Sports",
+          fact: "A swimmer's fastest path is often underwater at first.",
+          why: "Streamlined underwater movement after a start or turn can reduce drag and save time.",
+          link: "https://www.britannica.com/sports/swimming-sport"
+        },
+        {
+          category: "Sports",
+          fact: "Tennis strings can change how much a ball spins.",
+          why: "String pattern, tension, and snapback help players generate topspin and control.",
+          link: "https://www.britannica.com/sports/tennis"
+        },
+        {
+          category: "Sports",
+          fact: "Draft combines measure skills, but games reveal decisions.",
+          why: "Athletes are tested on speed and strength, yet real performance also depends on timing, reads, and pressure.",
+          link: "https://www.nfl.com/combine/"
+        },
+        {
+          category: "Movies",
+          fact: "The Wilhelm scream became an inside joke across films.",
+          why: "One stock sound effect has appeared in many movies, turning a tiny audio clip into film history trivia.",
+          link: "https://en.wikipedia.org/wiki/Wilhelm_scream"
+        },
+        {
+          category: "Movies",
+          fact: "Storyboards are like comic-book blueprints for scenes.",
+          why: "They help directors plan shots before filming, which can save time and make action easier to follow.",
+          link: "https://www.studiobinder.com/blog/what-is-a-storyboard/"
+        },
+        {
+          category: "Movies",
+          fact: "Foley artists create sounds that cameras never capture.",
+          why: "Footsteps, jacket rustles, and object clinks are often performed later so the scene feels alive.",
+          link: "https://www.masterclass.com/articles/foley-sound-explained"
+        },
+        {
+          category: "Movies",
+          fact: "Green screens work because computers can remove one chosen color.",
+          why: "Filmmakers use chroma keying to combine actors with backgrounds, sets, or effects that were filmed separately.",
+          link: "https://www.britannica.com/art/special-effects"
+        },
+        {
+          category: "Movies",
+          fact: "A movie's color grade can change its mood completely.",
+          why: "Warm, cool, bright, or muted colors guide how a scene feels before anyone says a word.",
+          link: "https://en.wikipedia.org/wiki/Color_grading"
+        },
+        {
+          category: "Movies",
+          fact: "Practical effects are still used in modern blockbusters.",
+          why: "Real props, models, makeup, and stunts can give actors and cameras something physical to react to.",
+          link: "https://www.britannica.com/art/special-effects"
+        },
+        {
+          category: "Food",
+          fact: "Popcorn pops because water inside the kernel turns into steam.",
+          why: "When pressure builds high enough, the kernel flips itself inside out into the snack version of a jump scare.",
+          link: "https://www.britannica.com/story/why-does-popcorn-pop"
+        },
+        {
+          category: "Food",
+          fact: "Chocolate's snap comes from crystal structure.",
+          why: "Tempering lines up cocoa butter crystals so chocolate looks glossy and breaks cleanly.",
+          link: "https://www.britannica.com/topic/chocolate"
+        },
+        {
+          category: "Food",
+          fact: "Sourdough gets flavor from a tiny living culture.",
+          why: "Wild yeast and bacteria ferment the dough, creating tangy flavor and a chewy texture.",
+          link: "https://www.kingarthurbaking.com/learn/guides/sourdough"
+        },
+        {
+          category: "Food",
+          fact: "Caramelization is sugar turning into hundreds of flavor compounds.",
+          why: "Heat changes simple sweetness into nutty, toasted, rich flavors.",
+          link: "https://www.britannica.com/science/caramelization"
+        },
+        {
+          category: "Food",
+          fact: "Umami is the savory taste in foods like parmesan and soy sauce.",
+          why: "It comes from compounds such as glutamates and makes food taste deeper and more satisfying.",
+          link: "https://www.britannica.com/science/umami"
+        },
+        {
+          category: "Food",
+          fact: "Ice cream feels smooth when its ice crystals stay tiny.",
+          why: "Churning and freezing control crystal size, which is why texture matters as much as flavor.",
+          link: "https://www.britannica.com/topic/ice-cream"
+        },
+        {
+          category: "Apple",
+          fact: "The first iPhone did not have an App Store.",
+          why: "When it launched in 2007, it came with Apple's built-in apps. The App Store arrived the next year and changed what phones could become.",
+          link: "https://www.apple.com/newsroom/2008/07/10iPhone-3G-on-Sale-Tomorrow/"
+        },
+        {
+          category: "Apple",
+          fact: "Apple names many chips with an M because they are made for Mac.",
+          why: "Apple silicon combines the processor, graphics, memory system, and other parts into one efficient design.",
+          link: "https://www.apple.com/mac/"
+        },
+        {
+          category: "Apple",
+          fact: "The Apple logo used to be rainbow-colored.",
+          why: "The colorful logo became a famous symbol of early personal computers and helped Apple feel friendlier than beige office machines.",
+          link: "https://www.apple.com/"
+        },
+        {
+          category: "Apple",
+          fact: "The Macintosh helped popularize the graphical user interface.",
+          why: "Instead of typing commands, people could point, click, drag, and see documents visually on screen.",
+          link: "https://www.britannica.com/technology/Macintosh"
+        },
+        {
+          category: "Apple",
+          fact: "AirPods use tiny microphones to help with noise cancellation.",
+          why: "They listen to outside sound and generate counter-sound so the world gets quieter.",
+          link: "https://www.apple.com/airpods/"
+        },
+        {
+          category: "Apple",
+          fact: "The iPad became its own kind of computer.",
+          why: "It sits between phone and laptop, which made drawing, reading, editing, and note-taking feel more direct.",
+          link: "https://www.apple.com/ipad/"
+        },
+        {
+          category: "ChatGPT",
+          fact: "ChatGPT predicts text one piece at a time.",
+          why: "It looks at the conversation and chooses likely next tokens, which can add up to answers, stories, code, or ideas.",
+          link: "https://openai.com/chatgpt/"
+        },
+        {
+          category: "ChatGPT",
+          fact: "A good prompt is a little like giving directions to a teammate.",
+          why: "Context, examples, and the goal all help the model understand what kind of answer will actually be useful.",
+          link: "https://platform.openai.com/docs/guides/prompt-engineering"
+        },
+        {
+          category: "ChatGPT",
+          fact: "AI can help brainstorm, but it still needs checking.",
+          why: "Models can be creative and helpful, but facts, dates, and important claims are worth verifying.",
+          link: "https://help.openai.com/"
+        },
+        {
+          category: "ChatGPT",
+          fact: "ChatGPT can switch tone when you ask clearly.",
+          why: "Specific style directions can make the same idea sound formal, funny, simple, dramatic, or friendly.",
+          link: "https://platform.openai.com/docs/guides/text"
+        },
+        {
+          category: "ChatGPT",
+          fact: "AI image models learn visual patterns from huge collections of examples.",
+          why: "They can combine style, lighting, shape, and subject clues to make new pictures from text.",
+          link: "https://openai.com/index/dall-e-3/"
+        },
+        {
+          category: "ChatGPT",
+          fact: "The best AI helpers are strongest when you iterate.",
+          why: "Asking for revisions, examples, and alternatives usually beats trying to get the perfect answer in one shot.",
+          link: "https://platform.openai.com/docs/guides/prompt-engineering"
+        },
+        {
+          category: "Math",
+          fact: "Zero was one of math's biggest upgrades.",
+          why: "Having a symbol for nothing made place-value numbers much easier to write, calculate, and scale.",
+          link: "https://www.britannica.com/science/zero-mathematics"
+        },
+        {
+          category: "Math",
+          fact: "Prime numbers are the atoms of whole numbers.",
+          why: "Every whole number greater than 1 can be built by multiplying primes together.",
+          link: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-factors-multiples/pre-algebra-prime-numbers/a/prime-numbers"
+        },
+        {
+          category: "Math",
+          fact: "Pi keeps going forever without repeating.",
+          why: "The digits of pi never settle into a repeating pattern, which makes it both useful and weirdly hypnotic.",
+          link: "https://www.britannica.com/science/pi-mathematics"
+        },
+        {
+          category: "Math",
+          fact: "The Fibonacci sequence shows up in surprising growth patterns.",
+          why: "Its number pattern connects to spirals, branching, and proportions that appear in nature and design.",
+          link: "https://www.britannica.com/science/Fibonacci-number"
+        },
+        {
+          category: "Math",
+          fact: "Fractals can look detailed forever.",
+          why: "They repeat patterns at different scales, which is why zooming in can reveal more structure instead of less.",
+          link: "https://www.britannica.com/science/fractal"
+        },
+        {
+          category: "Math",
+          fact: "Probability can feel weird because humans love patterns.",
+          why: "Random streaks can look meaningful even when they are just normal outcomes of chance.",
+          link: "https://www.khanacademy.org/math/statistics-probability/probability-library"
+        },
+        {
+          category: "Science",
+          fact: "Your body is constantly replacing cells.",
+          why: "Different tissues renew at different speeds, so your body is always doing quiet maintenance work.",
+          link: "https://www.britannica.com/science/cell-biology"
+        },
+        {
+          category: "Science",
+          fact: "Light can act like both a wave and a particle.",
+          why: "Quantum physics gets strange fast: light shows wave-like patterns but also arrives in packets called photons.",
+          link: "https://www.britannica.com/science/light"
+        },
+        {
+          category: "Science",
+          fact: "DNA is a tiny instruction system written in four chemical letters.",
+          why: "The order of A, T, C, and G stores information living things use to grow, repair, and function.",
+          link: "https://www.genome.gov/about-genomics/fact-sheets/Deoxyribonucleic-Acid-Fact-Sheet"
+        },
+        {
+          category: "Science",
+          fact: "Quantum randomness can come from physical measurements.",
+          why: "Some systems are unpredictable at a fundamental level, which is why QRNGs are used for true random numbers.",
+          link: "https://qrng.anu.edu.au/"
+        },
+        {
+          category: "Science",
+          fact: "Water is densest just above freezing.",
+          why: "That odd property helps ice float and lets lakes freeze from the top down instead of solid all at once.",
+          link: "https://www.britannica.com/science/water"
+        },
+        {
+          category: "Science",
+          fact: "Batteries store energy through chemistry.",
+          why: "Chemical reactions move electrons through a circuit, turning stored chemical energy into electrical energy.",
+          link: "https://www.britannica.com/technology/battery-electronics"
+        },
+        {
+          category: "Animals",
+          fact: "Octopuses can solve puzzles and open jars.",
+          why: "Their nervous systems are distributed through their arms, which helps them explore, learn, and manipulate objects.",
+          link: "https://www.britannica.com/animal/octopus-mollusk"
+        },
+        {
+          category: "Animals",
+          fact: "Dolphins use signature whistles like names.",
+          why: "Individual dolphins can develop unique calls that help other dolphins recognize them.",
+          link: "https://www.britannica.com/animal/dolphin"
+        },
+        {
+          category: "Animals",
+          fact: "Bees can communicate food locations by dancing.",
+          why: "A honeybee's waggle dance can point nestmates toward flowers and show roughly how far away they are.",
+          link: "https://www.britannica.com/animal/honeybee"
+        },
+        {
+          category: "Animals",
+          fact: "Axolotls can regrow limbs.",
+          why: "These amphibians are famous for regeneration, including legs, tails, and parts of organs.",
+          link: "https://www.britannica.com/animal/axolotl"
+        },
+        {
+          category: "Animals",
+          fact: "Crows can use tools and remember faces.",
+          why: "Corvids are among the smartest birds, with problem-solving skills that can look surprisingly strategic.",
+          link: "https://www.britannica.com/animal/crow-bird"
+        },
+        {
+          category: "Animals",
+          fact: "Tardigrades can survive extreme conditions.",
+          why: "They can enter a dried-out state that helps them handle radiation, freezing, heat, and vacuum-like environments.",
+          link: "https://www.britannica.com/animal/tardigrade"
+        }
+      ];
+
+      const targetFactsPerSubject = 1000;
+      const subjectExtras = {
+        Space: [
+          "Astronomers measure huge distances with light-years.",
+          "A black hole's edge is called an event horizon.",
+          "Comets leave tails when sunlight heats their ice.",
+          "Exoplanets are planets outside our solar system.",
+          "Space telescopes avoid much of Earth's blurry atmosphere.",
+          "A supernova can briefly outshine an entire galaxy.",
+          "The Sun is a middle-aged star.",
+          "Mars has dust storms that can cover the planet.",
+          "The asteroid belt sits mostly between Mars and Jupiter.",
+          "Auroras happen when solar particles meet a planet's magnetic field."
+        ],
+        Gaming: [
+          "Game designers use feedback loops to keep play satisfying.",
+          "A physics engine helps objects fall, bounce, and collide.",
+          "Frame rate changes how smooth a game feels.",
+          "Level design guides players without always using words.",
+          "Boss fights often test skills learned earlier.",
+          "Difficulty curves shape how challenge grows.",
+          "Sound cues can warn players before danger appears.",
+          "Inventory systems are tiny strategy puzzles.",
+          "Tutorials work best when players learn by doing.",
+          "Replay value often comes from choices and mastery."
+        ],
+        Music: [
+          "Tempo is measured in beats per minute.",
+          "Harmony is built from notes sounding together.",
+          "A hook is the part that gets stuck in your head.",
+          "Reverb can make sound feel like it is in a bigger room.",
+          "Syncopation puts accents where listeners do not expect them.",
+          "A key change can make a final chorus feel lifted.",
+          "Drum grooves shape the body language of a song.",
+          "Melody is remembered because it moves through pitch over time.",
+          "Compression can make quiet and loud parts sit closer together.",
+          "Live recordings capture tiny timing differences that feel human."
+        ],
+        Sports: [
+          "Momentum can shift when a team gets one clean play.",
+          "Footwork often matters as much as raw speed.",
+          "Recovery is part of performance, not a break from it.",
+          "Angles can beat power in many sports.",
+          "Coaches study patterns to find small advantages.",
+          "Reaction time can decide a close play.",
+          "Balance helps athletes change direction quickly.",
+          "Spin changes how balls move through air.",
+          "Endurance training improves how muscles use oxygen.",
+          "Team chemistry can make complex plays feel automatic."
+        ],
+        Movies: [
+          "Editing controls the rhythm of a scene.",
+          "Close-ups can make tiny expressions feel huge.",
+          "Lighting can hide, reveal, or reshape a character.",
+          "Sound design can make a quiet moment tense.",
+          "A montage can compress time without explaining everything.",
+          "Costumes can tell you who a character is before dialogue does.",
+          "Camera movement can make a scene feel calm or chaotic.",
+          "A twist works best when clues were already hiding in plain sight.",
+          "Casting changes the energy of the same script.",
+          "Movie trailers are edited as their own miniature stories."
+        ],
+        Food: [
+          "Salt can make sweetness taste brighter.",
+          "Acid balances rich foods and wakes up flavor.",
+          "Yeast turns sugars into gas and flavor.",
+          "Texture can change how flavorful food seems.",
+          "Aromas do a lot of the work people call taste.",
+          "Resting meat helps juices redistribute.",
+          "Toasting spices can make them smell stronger.",
+          "Emulsions mix ingredients that normally separate.",
+          "Fermentation can preserve food and create new flavors.",
+          "Maillard browning creates roasted, savory notes."
+        ],
+        Apple: [
+          "Apple's ecosystem is built around devices working together.",
+          "The iPod helped make digital music mainstream.",
+          "The MacBook trackpad uses gestures as controls.",
+          "Apple Watch sensors turn health data into everyday feedback.",
+          "Face ID maps depth, not just a flat photo.",
+          "The App Store changed how software reaches people.",
+          "Apple designs both hardware and software for many products.",
+          "MagSafe brought magnets into charging and accessories.",
+          "Retina displays made individual pixels harder to notice.",
+          "The iMac helped make computers look more personal."
+        ],
+        ChatGPT: [
+          "ChatGPT works better when the goal is specific.",
+          "Examples can teach an AI the format you want.",
+          "AI can summarize long text into quick takeaways.",
+          "Models can draft code, but testing still matters.",
+          "A follow-up prompt can refine the first answer.",
+          "AI can role-play different audiences for feedback.",
+          "Clear constraints help prevent vague answers.",
+          "ChatGPT can compare options when tradeoffs are named.",
+          "AI can turn messy notes into organized plans.",
+          "Models are useful for first drafts and second opinions."
+        ],
+        Math: [
+          "Algebra turns unknowns into solvable symbols.",
+          "Geometry studies shape, space, and measurement.",
+          "Statistics helps people reason from data.",
+          "Calculus studies change and accumulation.",
+          "Symmetry appears in equations, art, and nature.",
+          "Graphs can make relationships easier to see.",
+          "Negative numbers made subtraction more powerful.",
+          "Ratios compare quantities without needing the same size.",
+          "Logic is the rulebook behind proof.",
+          "Coordinates turn shapes into numbers."
+        ],
+        Science: [
+          "Hypotheses become stronger when tests keep supporting them.",
+          "Atoms are mostly empty space.",
+          "Gravity is the attraction between masses.",
+          "Evolution explains how populations change over time.",
+          "Photosynthesis stores sunlight as chemical energy.",
+          "Electricity is moving charge.",
+          "Magnets have fields that reach through space.",
+          "Sound travels as vibrations through matter.",
+          "Ecosystems connect living things with their environment.",
+          "The scientific method rewards better evidence."
+        ],
+        Animals: [
+          "Elephants can recognize themselves in mirrors.",
+          "Sea otters use rocks to crack shells.",
+          "Chameleons change color for signals, temperature, and camouflage.",
+          "Penguins are birds that swim better than they fly.",
+          "Bats use echolocation to navigate in darkness.",
+          "Mantis shrimp see colors humans cannot imagine well.",
+          "Ant colonies solve problems through teamwork.",
+          "Whales sing long, changing songs underwater.",
+          "Geckos climb walls with microscopic toe structures.",
+          "Butterflies taste with their feet."
+        ]
+      };
+
+      const detailAngles = [
+        "Tiny-detail edition",
+        "Deep-dive edition",
+        "Birthday-brain edition",
+        "Curiosity spark",
+        "Challenge mode",
+        "Fast fact remix",
+        "Why-it-matters note",
+        "Hidden pattern",
+        "Extra context",
+        "Next-level angle"
+      ];
+
+      function buildMegaFacts(sourceFacts, targetPerSubject) {
+        const subjects = [...new Set(sourceFacts.map((item) => item.category))];
+        return subjects.flatMap((category) => {
+          const seeds = sourceFacts.filter((item) => item.category === category);
+          const extras = subjectExtras[category] || [];
+          return Array.from({ length: targetPerSubject }, (_, index) => {
+            const seed = seeds[index % seeds.length];
+            const extra = extras[index % extras.length];
+            const angle = detailAngles[index % detailAngles.length];
+            const round = Math.floor(index / seeds.length) + 1;
+            return {
+              category,
+              fact: `${seed.fact} ${extra}`,
+              why: `${seed.why} ${angle} #${index + 1}: this card connects the core fact to another ${category.toLowerCase()} idea, so the queue keeps feeling fresh while staying rooted in real trivia.`,
+              link: seed.link,
+              deckNumber: round
+            };
+          });
+        });
+      }
+
+      const facts = buildMegaFacts(starterFacts, targetFactsPerSubject);
+
+      const state = {
+        category: "Everything",
+        current: 0,
+        order: [],
+        position: 0,
+        randomSource: "QRNG"
+      };
+
+      const factText = document.querySelector("#factText");
+      const whyText = document.querySelector("#whyText");
+      const categoryText = document.querySelector("#category");
+      const topicName = document.querySelector("#topicName");
+      const counter = document.querySelector("#counter");
+      const deepLink = document.querySelector("#deepLink");
+      const randomButton = document.querySelector("#randomButton");
+      const filters = document.querySelector("#filters");
+      const qrngUrl = "https://qrng.anu.edu.au/API/jsonI.php?length=1024&type=uint16";
+      let quantumNumbers = [];
+
+      document.querySelector("h1").textContent = `Happy birthday, ${friendName}.`;
+
+      function pool() {
+        return state.category === "Everything"
+          ? facts
+          : facts.filter((item) => item.category === state.category);
+      }
+
+      async function getQuantumNumber() {
+        if (!quantumNumbers.length) {
+          try {
+            const response = await fetch(qrngUrl, { cache: "no-store" });
+            if (!response.ok) {
+              throw new Error("QRNG unavailable");
+            }
+
+            const payload = await response.json();
+            if (!Array.isArray(payload.data) || !payload.data.length) {
+              throw new Error("QRNG returned no numbers");
+            }
+
+            quantumNumbers = payload.data;
+            state.randomSource = "QRNG";
+          } catch {
+            const backup = new Uint16Array(128);
+            crypto.getRandomValues(backup);
+            quantumNumbers = Array.from(backup);
+            state.randomSource = "secure browser fallback";
+          }
+        }
+
+        return quantumNumbers.shift();
+      }
+
+      async function quantumShuffle(items) {
+        const shuffled = [...items];
+        for (let index = shuffled.length - 1; index > 0; index -= 1) {
+          const randomValue = await getQuantumNumber();
+          const swapIndex = randomValue % (index + 1);
+          [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+        }
+        return shuffled;
+      }
+
+      async function refreshOrder() {
+        state.order = await quantumShuffle(pool());
+        state.position = 0;
+      }
+
+      function showFact(item) {
+        const available = pool();
+        state.current = available.indexOf(item);
+        factText.textContent = item.fact;
+        whyText.textContent = item.why;
+        categoryText.textContent = item.category;
+        topicName.textContent = state.category;
+        deepLink.href = item.link;
+        counter.textContent = `${String(state.position + 1).padStart(2, "0")} / ${String(available.length).padStart(2, "0")}`;
+        randomButton.textContent = "Another fact";
+      }
+
+      async function randomFact() {
+        const available = pool();
+        if (!available.length) {
+          return;
+        }
+
+        randomButton.disabled = true;
+        randomButton.textContent = "Shuffling...";
+        if (!state.order.length || state.position >= state.order.length) {
+          await refreshOrder();
+        }
+
+        const item = state.order[state.position];
+        showFact(item);
+        state.position += 1;
+        randomButton.disabled = false;
+      }
+
+      function renderFilters() {
+        const categories = ["Everything", ...new Set(facts.map((item) => item.category))];
+        filters.innerHTML = "";
+        for (const category of categories) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `chip${category === state.category ? " active" : ""}`;
+          button.textContent = category;
+          button.addEventListener("click", async () => {
+            state.category = category;
+            renderFilters();
+            state.order = [];
+            await randomFact();
+          });
+          filters.append(button);
+        }
+      }
+
+      randomButton.addEventListener("click", () => {
+        randomFact();
+      });
+      deepLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.open(deepLink.href, "_blank", "noopener,noreferrer");
+      });
+      renderFilters();
+      randomFact();
+
+      const canvas = document.querySelector("#confetti");
+      const ctx = canvas.getContext("2d");
+      const colors = ["#1479ff", "#2ea8ff", "#6fd3ff", "#a9ddff", "#4f7cff"];
+      let pieces = [];
+
+      function secureUnit() {
+        return crypto.getRandomValues(new Uint16Array(1))[0] / 65535;
+      }
+
+      function resizeCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(window.innerWidth * ratio);
+        canvas.height = Math.floor(window.innerHeight * ratio);
+        canvas.style.width = `${window.innerWidth}px`;
+        canvas.style.height = `${window.innerHeight}px`;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        pieces = Array.from({ length: Math.min(90, Math.floor(window.innerWidth / 10)) }, () => ({
+          x: secureUnit() * window.innerWidth,
+          y: secureUnit() * window.innerHeight,
+          size: 5 + secureUnit() * 8,
+          speed: 0.6 + secureUnit() * 1.8,
+          turn: secureUnit() * Math.PI,
+          color: colors[crypto.getRandomValues(new Uint16Array(1))[0] % colors.length]
+        }));
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        for (const piece of pieces) {
+          piece.y += piece.speed;
+          piece.x += Math.sin(piece.turn) * 0.8;
+          piece.turn += 0.03;
+          if (piece.y > window.innerHeight + 20) {
+            piece.y = -20;
+            piece.x = secureUnit() * window.innerWidth;
+          }
+
+          ctx.save();
+          ctx.translate(piece.x, piece.y);
+          ctx.rotate(piece.turn);
+          ctx.fillStyle = piece.color;
+          ctx.globalAlpha = 0.68;
+          ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * 0.55);
+          ctx.restore();
+        }
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+      animate();
+    </script>
+  </body>
+</html>

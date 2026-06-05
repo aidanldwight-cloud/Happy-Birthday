@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.html": "html"
+  },
+  "liveServer.settings.root": "/docs",
+  "liveServer.settings.CustomBrowser": "chrome"
+}
