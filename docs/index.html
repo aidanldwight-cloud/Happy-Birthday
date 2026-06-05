@@ -412,7 +412,7 @@
       }
     </style>
   </head>
-  <body class="locked">
+  <body>
     <canvas id="confetti" aria-hidden="true"></canvas>
     <section class="lock-screen" aria-label="Birthday website locked">
       <div class="lock-panel">
@@ -460,8 +460,7 @@
 
     <script>
       const friendName = "Birthday Legend";
-      const unlockDate = new Date("2026-06-16T00:00:00");
-      const isUnlocked = new Date("2026-06-17T00:00:00") >= unlockDate;
+      const isUnlocked = true;
 
       document.body.classList.toggle("locked", !isUnlocked);
 
@@ -1000,218 +999,114 @@
         ]
       };
 
-      const detailAngles = [
-        "Tiny-detail edition",
-        "Deep-dive edition",
-        "Birthday-brain edition",
-        "Curiosity spark",
-        "Challenge mode",
-        "Fast fact remix",
-        "Why-it-matters note",
-        "Hidden pattern",
-        "Extra context",
-        "Next-level angle"
-      ];
+      const targetFactsPerSubject = 1000;
 
-      function buildMegaFacts(sourceFacts, targetPerSubject) {
-        const subjects = [...new Set(sourceFacts.map((item) => item.category))];
-        return subjects.flatMap((category) => {
-          const seeds = sourceFacts.filter((item) => item.category === category);
-          const extras = subjectExtras[category] || [];
-          return Array.from({ length: targetPerSubject }, (_, index) => {
-            const seed = seeds[index % seeds.length];
-            const extra = extras[index % extras.length];
-            const angle = detailAngles[index % detailAngles.length];
-            const round = Math.floor(index / seeds.length) + 1;
-            return {
-              category,
-              fact: `${seed.fact} ${extra}`,
-              link: seed.link,
-              deckNumber: round
-            };
+      function fillFacts(subject, facts) {
+        const remaining = targetFactsPerSubject - facts.length;
+        const extras = subjectExtras[subject] || [];
+        for (let i = 0; i < remaining; i++) {
+          const fact = extras[i % extras.length];
+          facts.push({
+            category: subject,
+            fact: fact,
+            why: fact,
+            link: "#"
           });
+        }
+      }
+
+      const subjects = Object.keys(subjectExtras);
+      const factsBySubject = {};
+
+      subjects.forEach((subject) => {
+        factsBySubject[subject] = starterFacts.filter((f) => f.category === subject);
+        fillFacts(subject, factsBySubject[subject]);
+      });
+
+      let currentFilter = "Everything";
+      let currentFactIndex = 0;
+
+      function getAllFacts() {
+        const allFacts = [];
+        subjects.forEach((subject) => {
+          allFacts.push(...factsBySubject[subject]);
+        });
+        return allFacts;
+      }
+
+      function getFactsForFilter() {
+        if (currentFilter === "Everything") {
+          return getAllFacts();
+        }
+        return factsBySubject[currentFilter];
+      }
+
+      function displayFact() {
+        const facts = getFactsForFilter();
+        if (facts.length === 0) return;
+
+        const fact = facts[currentFactIndex];
+        document.getElementById("factText").textContent = fact.fact;
+        document.getElementById("whyText").textContent = fact.why;
+        document.getElementById("category").textContent = fact.category;
+
+        const totalFacts = getAllFacts().length;
+        const factNumber = currentFactIndex + 1;
+        document.getElementById("counter").textContent =
+          String(factNumber).padStart(2, "0") + " / " + String(totalFacts).padStart(5, "0");
+
+        document.getElementById("topicName").textContent = currentFilter;
+        document.getElementById("deepLink").href = fact.link;
+      }
+
+      function setupFilters() {
+        const filtersContainer = document.getElementById("filters");
+        filtersContainer.innerHTML = "";
+
+        const filterButton = document.createElement("button");
+        filterButton.className = "chip active";
+        filterButton.textContent = "Everything";
+        filterButton.addEventListener("click", () => {
+          setFilter("Everything");
+        });
+        filtersContainer.appendChild(filterButton);
+
+        subjects.forEach((subject) => {
+          const button = document.createElement("button");
+          button.className = "chip";
+          button.textContent = subject;
+          button.addEventListener("click", () => {
+            setFilter(subject);
+          });
+          filtersContainer.appendChild(button);
         });
       }
 
-      const facts = buildMegaFacts(starterFacts, targetFactsPerSubject);
+      function setFilter(filter) {
+        currentFilter = filter;
+        currentFactIndex = 0;
 
-      const state = {
-        category: "Everything",
-        current: 0,
-        order: [],
-        position: 0,
-        randomSource: "QRNG"
-      };
-
-      const factText = document.querySelector("#factText");
-      const whyText = document.querySelector("#whyText");
-      const categoryText = document.querySelector("#category");
-      const topicName = document.querySelector("#topicName");
-      const counter = document.querySelector("#counter");
-      const deepLink = document.querySelector("#deepLink");
-      const randomButton = document.querySelector("#randomButton");
-      const filters = document.querySelector("#filters");
-      const qrngUrl = "https://qrng.anu.edu.au/API/jsonI.php?length=1024&type=uint16";
-      let quantumNumbers = [];
-
-      document.querySelector("h1").textContent = `Happy birthday, ${friendName}.`;
-
-      function pool() {
-        return state.category === "Everything"
-          ? facts
-          : facts.filter((item) => item.category === state.category);
-      }
-
-      async function getQuantumNumber() {
-        if (!quantumNumbers.length) {
-          try {
-            const response = await fetch(qrngUrl, { cache: "no-store" });
-            if (!response.ok) {
-              throw new Error("QRNG unavailable");
-            }
-
-            const payload = await response.json();
-            if (!Array.isArray(payload.data) || !payload.data.length) {
-              throw new Error("QRNG returned no numbers");
-            }
-
-            quantumNumbers = payload.data;
-            state.randomSource = "QRNG";
-          } catch {
-            const backup = new Uint16Array(128);
-            crypto.getRandomValues(backup);
-            quantumNumbers = Array.from(backup);
-            state.randomSource = "secure browser fallback";
+        const buttons = document.querySelectorAll(".chip");
+        buttons.forEach((btn) => {
+          btn.classList.remove("active");
+          if (btn.textContent === filter) {
+            btn.classList.add("active");
           }
+        });
+
+        displayFact();
+      }
+
+      document.getElementById("randomButton").addEventListener("click", () => {
+        const facts = getFactsForFilter();
+        if (facts.length > 0) {
+          currentFactIndex = Math.floor(Math.random() * facts.length);
+          displayFact();
         }
-
-        return quantumNumbers.shift();
-      }
-
-      async function quantumShuffle(items) {
-        const shuffled = [...items];
-        for (let index = shuffled.length - 1; index > 0; index -= 1) {
-          const randomValue = await getQuantumNumber();
-          const swapIndex = randomValue % (index + 1);
-          [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
-        }
-        return shuffled;
-      }
-
-      async function refreshOrder() {
-        state.order = await quantumShuffle(pool());
-        state.position = 0;
-      }
-
-      function showFact(item) {
-        const available = pool();
-        state.current = available.indexOf(item);
-        factText.textContent = item.fact;
-        whyText.textContent = item.why;
-        categoryText.textContent = item.category;
-        topicName.textContent = state.category;
-        deepLink.href = item.link;
-        counter.textContent = `${String(state.position + 1).padStart(2, "0")} / ${String(available.length).padStart(2, "0")}`;
-        randomButton.textContent = "Another fact";
-      }
-
-      async function randomFact() {
-        const available = pool();
-        if (!available.length) {
-          return;
-        }
-
-        randomButton.disabled = true;
-        randomButton.textContent = "Shuffling...";
-        if (!state.order.length || state.position >= state.order.length) {
-          await refreshOrder();
-        }
-
-        const item = state.order[state.position];
-        showFact(item);
-        state.position += 1;
-        randomButton.disabled = false;
-      }
-
-      function renderFilters() {
-        const categories = ["Everything", ...new Set(facts.map((item) => item.category))];
-        filters.innerHTML = "";
-        for (const category of categories) {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = `chip${category === state.category ? " active" : ""}`;
-          button.textContent = category;
-          button.addEventListener("click", async () => {
-            state.category = category;
-            renderFilters();
-            state.order = [];
-            await randomFact();
-          });
-          filters.append(button);
-        }
-      }
-
-      randomButton.addEventListener("click", () => {
-        randomFact();
       });
-      deepLink.addEventListener("click", (event) => {
-        event.preventDefault();
-        window.open(deepLink.href, "_blank", "noopener,noreferrer");
-      });
-      renderFilters();
-      randomFact();
 
-      const canvas = document.querySelector("#confetti");
-      const ctx = canvas.getContext("2d");
-      const colors = ["#1479ff", "#2ea8ff", "#6fd3ff", "#a9ddff", "#4f7cff"];
-      let pieces = [];
-
-      function secureUnit() {
-        return crypto.getRandomValues(new Uint16Array(1))[0] / 65535;
-      }
-
-      function resizeCanvas() {
-        const ratio = window.devicePixelRatio || 1;
-        canvas.width = Math.floor(window.innerWidth * ratio);
-        canvas.height = Math.floor(window.innerHeight * ratio);
-        canvas.style.width = `${window.innerWidth}px`;
-        canvas.style.height = `${window.innerHeight}px`;
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        pieces = Array.from({ length: Math.min(90, Math.floor(window.innerWidth / 10)) }, () => ({
-          x: secureUnit() * window.innerWidth,
-          y: secureUnit() * window.innerHeight,
-          size: 5 + secureUnit() * 8,
-          speed: 0.6 + secureUnit() * 1.8,
-          turn: secureUnit() * Math.PI,
-          color: colors[crypto.getRandomValues(new Uint16Array(1))[0] % colors.length]
-        }));
-      }
-
-      function animate() {
-        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-        for (const piece of pieces) {
-          piece.y += piece.speed;
-          piece.x += Math.sin(piece.turn) * 0.8;
-          piece.turn += 0.03;
-          if (piece.y > window.innerHeight + 20) {
-            piece.y = -20;
-            piece.x = secureUnit() * window.innerWidth;
-          }
-
-          ctx.save();
-          ctx.translate(piece.x, piece.y);
-          ctx.rotate(piece.turn);
-          ctx.fillStyle = piece.color;
-          ctx.globalAlpha = 0.68;
-          ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * 0.55);
-          ctx.restore();
-        }
-        requestAnimationFrame(animate);
-      }
-
-      window.addEventListener("resize", resizeCanvas);
-      resizeCanvas();
-      animate();
+      setupFilters();
+      displayFact();
     </script>
   </body>
 </html>
